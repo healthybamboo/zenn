@@ -5,9 +5,12 @@ module.exports = {
       },
     },
     rules: {
-      "preset-ja-technical-writing":true,
+      "preset-ja-technical-writing":{
+        "max-ten": {
+            "max": 4,
+        },
+      },
       "preset-jtf-style": {
-        "2.1.6.カタカナの長音": true,
         "2.2.1.ひらがなと漢字の使い分け": true,
       },
     },
