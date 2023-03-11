@@ -1,0 +1,62 @@
+name: Lint　Check
+
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  textlint:
+    strategy:
+      # 実行環境
+      matrix:
+        os:
+          - ubuntu-latest
+        node-version:
+          - 19.7.x
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # コードをチェックアウト
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # nodeをインストール
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2.3.0
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Get the number of processors currently available
+        id: processors
+        run: echo "::set-output name=number::$(getconf _NPROCESSORS_ONLN)"
+
+      - name: Cache node modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules
+
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+
+      - name: Install dependencies
+        run: npm install
+        env:
+          CHILD_CONCURRENCY: ${{ steps.processors.outputs.number }}
+          NETWORK_CONCURRENCY: ${{ steps.processors.outputs.number }}
+
+      - name: textlint
+        run: npm run lint:text:full -- ${FILES} -f checkstyle --experimental --parallel --max-concurrency ${{ steps.processors.outputs.number }} | reviewdog -f=checkstyle -name="textlint" -reporter=github-pr-review -level=${LEVEL}
+        env:
+          FILES: README.md articles/**/*.md
+          LEVEL: error
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}

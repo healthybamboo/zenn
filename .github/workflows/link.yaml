@@ -1,0 +1,24 @@
+name: Link Alive Check
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  markdown_link_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Link Alive Check
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+           use-quiet-mode: 'yes'
+           use-verbose-mode: 'yes'
