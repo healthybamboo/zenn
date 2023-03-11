@@ -1,4 +1,4 @@
-name: Link Alive
+name: Link Alive Check
 
 on:
   schedule:

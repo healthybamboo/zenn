@@ -1,4 +1,4 @@
-name: Lint
+name: Lint　Check
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ jobs:
         os:
           - ubuntu-latest
         node-version:
-          - 14.x
+          - 19.7.x
     runs-on: ${{ matrix.os }}
 
     steps:
