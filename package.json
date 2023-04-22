@@ -16,7 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "zenn-cli": "^0.1.141"
+    "zenn-cli": "^0.1.142"
   },
   "devDependencies": {
     "husky": "^8.0.3",
