@@ -1,0 +1,61 @@
+name: Create Branch from Issue Title
+
+# issueがアサインされた時に実行
+on:
+  issues:
+    types: [assigned]
+
+jobs:
+  # ChatGPTを利用して、issueのタイトルをもとにブランチ名を生成し、ブランチを作成する
+  create-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+      - name: Generate Branch Name
+        id: generate_branch_name
+        run: |
+          result=$(curl -s https://api.openai.com/v1/chat/completions \
+               -H "Content-Type: application/json" \
+               -H "Authorization: Bearer ${{ github.secrets.OPENAI_API_KEY }}" \
+              -d '{
+                   "model": "gpt-4o",
+                   "messages": [
+                      {
+                          "role": "system",
+                          "content": "これから入力されるGithubIssueのissue番号,ラベル,タイトルから考えられる適切なブランチ名を出力してください。ここでいう適切なブランチ名は英語表記であることが前提です。"
+                      },
+                      {
+                          "role": "system",
+                          "content": "ただし、prefixはラベルごとに以下のように今っています。\n新規: new/\n修正: fix/\nother/\n\nまた、issue番号はprefixの後に#ありでつけてください。その後、_でつなげてタイトルをつけてください。例としては、「new/#123_create_chatgpt_code_review」のような感じです。"
+                      },
+                      {
+                          "role": "user",
+                          "content": "issuenumber: ${{ github.event.issue.number }} label: ${{ github.event.issue.labels.name }} ,title: ${{ github.event.issue.title }}"
+                      }
+                  ],
+                  "temperature": 0.3,
+                  "max_tokens": 50
+                  }' | jq -r '.choices[0].message.content')
+          echo branch_name=$(echo $result | cut -d ' ' -f 2) >> $GITHUB_ENV
+          
+      - name: Create and Push Branch
+        run: |
+          BRANCH_NAME=$(echo "${{ env.branch_name }}")
+          git checkout -b "${BRANCH_NAME}"
+          git push origin "${BRANCH_NAME}"
+
+      - name: Comment on Issue with Branch Name
+        run: |
+          BRANCH_NAME=$(echo "${{ env.branch_name }}")
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -d "{\"body\": \"Branch ${BRANCH_NAME} has been created.\"}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
