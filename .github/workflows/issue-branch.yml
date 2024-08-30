@@ -9,6 +9,9 @@ jobs:
   # ChatGPTを利用して、issueのタイトルをもとにブランチ名を生成し、ブランチを作成する
   create-branch:
     runs-on: ubuntu-latest
+    env:
+      branch_name: ""
+      first_label: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -18,13 +21,21 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
+      - name: Get first label
+        id: get_label
+        run: |
+          echo "Labels: ${{ toJson(github.event.issue.labels) }}"
+          FIRST_LABEL=$(echo '${{ toJson(github.event.issue.labels) }}' | jq -r '.[0].name')
+          echo "First label: $FIRST_LABEL"
+          echo "first_label=$FIRST_LABEL" >> $GITHUB_ENV
+
       - name: Generate Branch Name
         id: generate_branch_name
         run: |
-          result=$(curl -s https://api.openai.com/v1/chat/completions \
+          response=$(curl -s https://api.openai.com/v1/chat/completions \
                -H "Content-Type: application/json" \
-               -H "Authorization: Bearer ${{ github.secrets.OPENAI_API_KEY }}" \
-              -d '{
+               -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
+               -d '{
                    "model": "gpt-4o",
                    "messages": [
                       {
@@ -33,18 +44,31 @@ jobs:
                       },
                       {
                           "role": "system",
-                          "content": "ただし、prefixはラベルごとに以下のように今っています。\n新規: new/\n修正: fix/\nother/\n\nまた、issue番号はprefixの後に#ありでつけてください。その後、_でつなげてタイトルをつけてください。例としては、「new/#123_create_chatgpt_code_review」のような感じです。"
+                          "content": "ただし、prefixはラベルごとに以下のように今っています。\n新規: new/\n修正: fix/\nother/\n\nまた、issue番号はprefixの後に#ありでつけてください。その後にタイトルをつけてください。それぞれの単語はアンダースコア(_)で繋ぐものとします。例としては、「new/#123_create_chatgpt_code_review」のような感じです。"
                       },
                       {
                           "role": "user",
-                          "content": "issuenumber: ${{ github.event.issue.number }} label: ${{ github.event.issue.labels.name }} ,title: ${{ github.event.issue.title }}"
+                          "content": "issuenumber: ${{ github.event.issue.number }} label: ${{ env.first_label }} ,title: ${{ github.event.issue.title }}"
                       }
                   ],
                   "temperature": 0.3,
                   "max_tokens": 50
-                  }' | jq -r '.choices[0].message.content')
+                  }')
+          echo 'DEBUG: API レスポンス\n' $response
+          result=$(echo $response | jq -r '.choices[0].message.content')
+
+          echo 'DEBUG: 実行結果\n' $response
+          echo '実行結果: ' $result
+
+          echo 'DEBUG: 値をチェックします'
+          if [ "$result" = "null" ]; then
+                echo "ChatGPTの実行に失敗しました。"
+                exit 1
+          fi
+
+          echo 'DEBUG: 環境変数にセットします'
           echo branch_name=$(echo $result | cut -d ' ' -f 2) >> $GITHUB_ENV
-          
+
       - name: Create and Push Branch
         run: |
           BRANCH_NAME=$(echo "${{ env.branch_name }}")
