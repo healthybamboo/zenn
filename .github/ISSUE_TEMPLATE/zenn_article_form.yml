@@ -2,31 +2,29 @@ name: Zenn Article Template
 description: "Zenn記事のテンプレートを作成するためのフォームです。"
 title: "[記事タイトル]"
 labels: ["新規"]
-assignees:
-  - healthybamboo
 body:
   - type: markdown
     attributes:
       value: |
         # Zenn記事テンプレート
         以下のフィールドに情報を入力してください。
-
-  - type: input
-    id: title
+  - type: dropdown
+    id: article_type
     attributes:
-      label: タイトル
-      description: 記事のタイトルを入力してください。
-      placeholder: "記事タイトル"
-    validations:
-      required: true
+      label: 記事の種類
+      description: "記事の種類を選択してください。\nhttps://zenn.dev/tech-or-idea"
+      multiple: true
+      options:
+        - Tech
+        - Idea
 
-  - type: input
+  - type: textarea
     attributes:
       label: 記事概要
       description: 記事の内容を簡単に説明する概要を記入してください。
       placeholder: "記事の概要"
 
-  - type: input
+  - type: textarea
     attributes:
       label: 前提条件
       description: 読者が記事を理解するために必要な前提条件や知識を記載してください。
@@ -40,10 +38,9 @@ body:
       placeholder: "セクション1:\nセクション2:\nセクション3:"
     validations:
       required: false
-     
-  - type: input
+
+  - type: textarea
     attributes:
       label: 参考リンク
       description: 記事に関連する参考リンクやリソースを記載してください。
       placeholder: "参考リンク"
-
