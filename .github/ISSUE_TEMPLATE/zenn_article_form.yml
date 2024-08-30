@@ -13,7 +13,7 @@ body:
     attributes:
       label: 記事の種類
       description: "記事の種類を選択してください。\nhttps://zenn.dev/tech-or-idea"
-      multiple: true
+      multiple: false
       options:
         - Tech
         - Idea
