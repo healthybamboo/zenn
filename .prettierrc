@@ -3,4 +3,4 @@ overrides:
     - "*.md"
     - README
     options:
-      parser: markdown-nocjsp
+      parser: markdown
